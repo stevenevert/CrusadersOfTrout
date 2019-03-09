@@ -1,14 +1,12 @@
 import numpy as np
-from exceptions import InvalidAgeError
+from exceptions import InvalidAgeError, InvalidPlayerType
 
 
 class Player:
 
-    def __init__(self, name, age, years_experience):
+    def __init__(self, age):
 
-        self.name = name
         self.age = age
-        self.years_experience = years_experience
 
     def _get_random_factor(self):
 
@@ -21,7 +19,7 @@ class Player:
         elif 24 < self.age < 28:
             random_factor = 0.1
 
-        elif 18 < self.age <= 24:
+        elif 18 <= self.age <= 24:
             random_factor = 0.2
 
         else:
@@ -33,14 +31,12 @@ class Player:
 class Hitter(Player):
 
     def __init__(self,
-                 name,
                  age,
-                 years_experience,
                  average,
                  obp,
                  ops):
 
-        super().__init__(name, age, years_experience)
+        super().__init__(age)
         self.average = average
         self.obp = obp
         self.ops = ops
@@ -56,24 +52,23 @@ class Hitter(Player):
         predicted_obp = np.random.normal(obp_mean, 0.03)
         predicted_ops = np.random.normal(ops_mean, 0.1)
 
-        return predicted_average, predicted_obp, predicted_ops
+        predictions = {"predicted_average": predicted_average,
+                       "predicted_obp": predicted_obp,
+                       "predicted_ops": predicted_ops}
 
-
-
+        return predictions
 
 
 class Pitcher(Player):
 
     def __init__(self,
-                 name,
                  age,
-                 years_experience,
                  era,
                  k_per_nine,
                  oba,
                  ):
 
-        super().__init__(name, age, years_experience)
+        super().__init__(age)
         self.era = era
         self.k_per_nine = k_per_nine
         self.opa = oba
@@ -81,8 +76,6 @@ class Pitcher(Player):
     def predict(self):
 
         random_factor = self._get_random_factor()
-
-        random_factor += (self.years_experience / (self.years_experience + 10))
 
         era_mean = self.era - self.era*random_factor
         k_per_nine_mean = self.k_per_nine + self.era*random_factor
@@ -96,4 +89,30 @@ class Pitcher(Player):
         predcted_k_per_nine = np.random.normal(k_per_nine_mean, k_per_nine_stdev)
         predicted_opa = np.random.normal(opa_mean, opa_stdev)
 
-        return predicted_era, predcted_k_per_nine, predicted_opa
+        predictions = {"predicted_era": predicted_era,
+                       "predicted_k_per_nine": predcted_k_per_nine,
+                       "predicted_opa": predicted_opa}
+
+        return predictions
+
+
+def predict(stats):
+    player_type = stats["type"]
+    age = stats["age"]
+
+    if player_type.upper() == "PITCHER":
+        era = stats.get("era")
+        oba = stats.get("oba")
+        k_per_nine = stats.get("k_per_nine")
+        player = Pitcher(age, era, oba, k_per_nine)
+
+    elif player_type.upper() == "HITTER":
+        avg = stats.get("average")
+        obp = stats.get("obp")
+        ops = stats.get("ops")
+        player = Hitter(age, avg, obp, ops)
+
+    else:
+        raise InvalidPlayerType("Must enter either a hitter or a pitcher")
+
+    return player.predict()
